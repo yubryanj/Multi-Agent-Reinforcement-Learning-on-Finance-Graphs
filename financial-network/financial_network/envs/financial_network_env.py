@@ -3,11 +3,10 @@ import numpy as np
 import pandas
 from gym import error, spaces, utils
 
-DEBUG = True
+DEBUG = False
 
 class Financial_Network_Env(gym.Env):
   metadata = {'render.modes': ['human']}
-
 
   def __init__(self,  number_of_banks     = 3,   \
                       cash_in_circulation = 1000,\
@@ -67,7 +66,7 @@ class Financial_Network_Env(gym.Env):
     self.timestep += 1
 
     # Allocate the cash as the agents requested
-    self._allocate_cash(action)
+    self._take_action(action)
 
     observations  = self._get_observations()
     rewards       = self._calculate_rewards()
@@ -105,10 +104,14 @@ class Financial_Network_Env(gym.Env):
     :param  mode  defines the representation to output
     :output None
     """
-    print("Rendering the environment") if DEBUG else None
-    
-    print(f'self.debts:\n{self.debts}')
-    print(f'self.cash_position:\n{self.cash_position}')
+
+    if mode == 'human':
+      print("Rendering the environment") if DEBUG else None
+      print(f'At timestep {self.timestep}')
+      print(f'self.debts:\n{self.debts}')
+      print(f'self.cash_position:\n{self.cash_position}')
+    else:
+      pass
 
 
   def close(self):
@@ -313,7 +316,7 @@ class Financial_Network_Env(gym.Env):
     return observations
 
 
-  def _allocate_cash(self, action):
+  def _take_action(self, action):
     """
     Distributes cash as per the action requested by the agents
     :param  action  np.matrix where each cell is the percentage of the cash position to allocate
@@ -340,14 +343,14 @@ if __name__ == "__main__":
                                       terminal_timestep   = 1)
 
   observations = environment.reset()
-  for _ in range(1):
+  for _ in range(3):
       action = np.array([ [0.2,   0.5,  0.3],
                           [0.0,   1.0,  0.0],
                           [0.3,   0.3,  0.3]]
                           )
       observations, rewards, done, info = environment.step(action)
       
-      print(f'rewards:\n...{rewards}')
+      print(f'Episode finished? {done}\nAgent rewards {rewards}')
 
       if done:
         observations = environment.reset()
