@@ -13,53 +13,63 @@ class Financial_Network_Env(gym.Env):
                       cash_in_circulation = 1000,\
                       haircut_multiplier  = 0.9,\
                       terminal_timestep   = 1):
+
     print("Initializing environment") if DEBUG else None
 
     self.timestep             = 0
-    self.terminal_timestep    = 1
+    self.terminal_timestep    = terminal_timestep
     self.number_of_banks      = number_of_banks
     self.cash_in_circulation  = cash_in_circulation
     self.haircut_multiplier   = haircut_multiplier
+
+    # Define all possible observations
+    self.observation_space = spaces.Dict(dict(
+      debts_outstanding = spaces.Box( low   = 0,\
+                                      high  = self.cash_in_circulation, \
+                                      shape = (self.number_of_banks,self.number_of_banks), \
+                                      dtype = np.float32),
+
+      cash_position     = spaces.Box( low   = 0,\
+                                      high  = self.cash_in_circulation, \
+                                      shape = (self.number_of_banks, 1), \
+                                      dtype = np.float32),                                    
+    ))      
+
+    # Defines all possible actions
+    # NOTE: Assumes all-to-all connection between banks
+    self.action_space = spaces.Box(   low   = 0,\
+                                      high  = 1,\
+                                      shape = ( self.number_of_banks, self.number_of_banks), 
+                                      dtype = np.float32
+                                      )
 
     # Initialize the debt and cash positions of the banks
     self.debts, self.cash_position = self._initialize_banks(  number_of_banks=number_of_banks,\
                                                               cash_in_circulation=cash_in_circulation
                                                             )
 
-    # Define the observation space such that at each time step, the debt and cash matrix is shown
-    # The observation matrix has (self.number_of_banks + 1) rows reflecting 
-    # ...the debt matrix and the cash position matrix vertically stacked
-    # The number of columns reflects the individual banks
-    self.observation_space = spaces.Box(low   = 0,\
-                                        high  = self.cash_in_circulation,\
-                                        shape = ( self.number_of_banks + 1, # Vertically stacked debt matrix and cash position
-                                                  self.number_of_banks),    # Columns of the debt matrix (individual banks)
-                                        dtype = np.float32
-                                        )
-
-    # Action space: Every bank can send cash to every other bank
-    # First item defines which banks to send money to
-    # Second item: Percentage of current AUM to be allocated
-    self.action_space = spaces.Box( low   = 0,\
-                                    high  = 1,\
-                                    shape = ( self.number_of_banks,   # "From" Bank
-                                              self.number_of_banks),  # "To" Bank
-                                    dtype = np.float32
-                                    )
-    # TODO:Should be able to accept a [number_of_banks,number_of_banks] 
-    # matrix of values [0,1] and normalize again in the step function
-  
     print("Finished initializing environment") if DEBUG else None
 
 
   def step(self, action):
+    """
+    Takes one step in the environment
+    :param  action      action submitted by the agent
+    :output observation Vector representing updated environment state
+    :output rewards     Reward vector for agent
+    :output done        True/False depending if the episode is finished
+    :output info        additional information
+    """
     # Check that a valid action is passed
     assert self.action_space.contains(action)
 
     # Increment the timestep counter
     self.timestep += 1
 
-    observations  = self._get_observation()
+    # Allocate the cash as the agents requested
+    self._allocate_cash(action)
+
+    observations  = self._get_observations()
     rewards       = self._calculate_rewards()
     done          = self._determine_if_episode_is_done()
     info          = {}
@@ -84,7 +94,7 @@ class Financial_Network_Env(gym.Env):
                                                             )
     
     # Rebuild the observations
-    observations = self._get_observation()
+    observations = self._get_observations()
 
     return observations
 
@@ -104,10 +114,25 @@ class Financial_Network_Env(gym.Env):
   def close(self):
     """
     Executed on closure of the program
-    TODO: Write me?
+    :param  None
+    :output None
     """
     print("Closing the environment") if DEBUG else None
     pass
+
+
+  def _normalize_cash_distribution(self, action):
+    """
+    In the case the agent attempts to distribute more than 100%
+    of thier cash position, then the system will normalize the amount
+    to be distribute 100%
+    :param  action  action matrix to be normalized
+    :output action  normalized action matrix
+    """
+    row_sums  = action.sum(axis=1, keepdims=True)
+    action    = action / row_sums
+
+    return action
 
 
   def _determine_if_episode_is_done(self):
@@ -151,10 +176,12 @@ class Financial_Network_Env(gym.Env):
     Test version of initialization
     """
     # Debts are organized as row owes column
-    debts = np.array([[0,10,20],[0,0,50],[30,50,0]])
+    debts = np.array([[00,  10, 20],
+                      [00,  00, 50],
+                      [30,  50, 00]])
 
     # Note, bank 1 is in default, with 20 units more debt than cash
-    cash = np.array([200,100,30])
+    cash = np.array(  [200, 100, 30] )
 
     return debts, cash 
 
@@ -272,24 +299,55 @@ class Financial_Network_Env(gym.Env):
     return rewards
 
 
-  def _get_observation(self):
+  def _get_observations(self):
     """
     Generates the observation matrix displayed to the agent
     :param    None
     :output   np.array  [self.number_of_banks + 1, self.number_of_banks] 
                         matrix stacking the debt and cash position of each agent
     """
-    return np.vstack((self.debts,self.cash_position))
+    observations = {  'debts_outstanding' : self.debts,
+                      'cash_position'     : self.cash_position
+                      }
+
+    return observations
+
+
+  def _allocate_cash(self, action):
+    """
+    Distributes cash as per the action requested by the agents
+    :param  action  np.matrix where each cell is the percentage of the cash position to allocate
+    :output None
+    """
+    # Normalize the cash distribution to 100%
+    action = self._normalize_cash_distribution(action)
+
+    n_rows, n_cols = action.shape
+
+    # Allocate cash as requested by the banks    
+    for from_bank in range(n_rows):
+      for to_bank in range(n_cols):
+        percentage_to_allocate          = action[from_bank, to_bank]
+        amount                          = self.cash_position[from_bank] * percentage_to_allocate
+        self.cash_position[from_bank]   -= amount
+        self.cash_position[to_bank]     += amount
+
 
 if __name__ == "__main__":
-  environment = Financial_Network_Env()
+  environment = Financial_Network_Env(number_of_banks     = 3,   \
+                                      cash_in_circulation = 1000,\
+                                      haircut_multiplier  = 0.9,\
+                                      terminal_timestep   = 1)
 
   observations = environment.reset()
   for _ in range(1):
-      action = [0]
+      action = np.array([ [0.2,   0.5,  0.3],
+                          [0.0,   1.0,  0.0],
+                          [0.3,   0.3,  0.3]]
+                          )
       observations, rewards, done, info = environment.step(action)
       
-      print(f'rewards:\n{rewards}')
+      print(f'rewards:\n...{rewards}')
 
       if done:
         observations = environment.reset()
