@@ -21,18 +21,25 @@ class Financial_Network_Env(gym.Env):
     self.cash_in_circulation  = cash_in_circulation
     self.haircut_multiplier   = haircut_multiplier
 
-    # Define all possible observations
-    self.observation_space = spaces.Dict(dict(
-      debts_outstanding = spaces.Box( low   = 0,\
-                                      high  = self.cash_in_circulation, \
-                                      shape = (self.number_of_banks,self.number_of_banks), \
-                                      dtype = np.float32),
+    # # Define all possible observations
+    # self.observation_space = spaces.Dict(dict(
+    #   debts_outstanding = spaces.Box( low   = 0,\
+    #                                   high  = self.cash_in_circulation, \
+    #                                   shape = (self.number_of_banks,self.number_of_banks), \
+    #                                   dtype = np.float32),
 
-      cash_position     = spaces.Box( low   = 0,\
-                                      high  = self.cash_in_circulation, \
-                                      shape = (self.number_of_banks, 1), \
-                                      dtype = np.float32),                                    
-    ))      
+    #   cash_position     = spaces.Box( low   = 0,\
+    #                                   high  = self.cash_in_circulation, \
+    #                                   shape = (self.number_of_banks, 1), \
+    #                                   dtype = np.float32),                                    
+    # ))      
+
+    self.observation_space = spaces.Box(low   = 0,\
+                                        high  = self.cash_in_circulation, \
+                                        shape = (self.number_of_banks + 1, self.number_of_banks), \
+                                        dtype = np.float32
+                                        )
+
 
     # Defines all possible actions
     # NOTE: Assumes all-to-all connection between banks
@@ -72,6 +79,8 @@ class Financial_Network_Env(gym.Env):
     rewards       = self._calculate_rewards()
     done          = self._determine_if_episode_is_done()
     info          = {}
+
+    observations  = self.observation_space.sample()
 
     return observations, rewards, done, info
 
@@ -309,10 +318,14 @@ class Financial_Network_Env(gym.Env):
     :output   np.array  [self.number_of_banks + 1, self.number_of_banks] 
                         matrix stacking the debt and cash position of each agent
     """
-    observations = {  'debts_outstanding' : self.debts,
-                      'cash_position'     : self.cash_position
-                      }
 
+    #TODO: Write me! Currently not in acceptable format for training purposes
+    # observations = {  'debts_outstanding' : self.debts,
+    #                   'cash_position'     : self.cash_position
+    #                   }
+
+    observations = np.vstack((self.debts, self.cash_position))
+      
     return observations
 
 
