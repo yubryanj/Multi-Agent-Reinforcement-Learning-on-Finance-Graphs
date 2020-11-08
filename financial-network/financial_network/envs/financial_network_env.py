@@ -4,6 +4,7 @@ import pandas
 from gym import error, spaces, utils
 
 DEBUG = False
+EPSILON = 1e-10
 
 class Financial_Network_Env(gym.Env):
   metadata = {'render.modes': ['human']}
@@ -21,31 +22,17 @@ class Financial_Network_Env(gym.Env):
     self.cash_in_circulation  = cash_in_circulation
     self.haircut_multiplier   = haircut_multiplier
 
-    # # Define all possible observations
-    # self.observation_space = spaces.Dict(dict(
-    #   debts_outstanding = spaces.Box( low   = 0,\
-    #                                   high  = self.cash_in_circulation, \
-    #                                   shape = (self.number_of_banks,self.number_of_banks), \
-    #                                   dtype = np.float32),
-
-    #   cash_position     = spaces.Box( low   = 0,\
-    #                                   high  = self.cash_in_circulation, \
-    #                                   shape = (self.number_of_banks, 1), \
-    #                                   dtype = np.float32),                                    
-    # ))      
-
     self.observation_space = spaces.Box(low   = 0,\
                                         high  = self.cash_in_circulation, \
                                         shape = (self.number_of_banks + 1, self.number_of_banks), \
                                         dtype = np.float32
                                         )
 
-
     # Defines all possible actions
     # NOTE: Assumes all-to-all connection between banks
     self.action_space = spaces.Box(   low   = 0,\
                                       high  = 1,\
-                                      shape = ( self.number_of_banks, self.number_of_banks), 
+                                      shape = ( self.number_of_banks * self.number_of_banks,), 
                                       dtype = np.float32
                                       )
 
@@ -142,7 +129,8 @@ class Financial_Network_Env(gym.Env):
     :output action  normalized action matrix
     """
     row_sums  = action.sum(axis=1, keepdims=True)
-    action    = action / row_sums
+    action    = action / (row_sums + EPSILON)
+    # action    = action.reshape(-1,)
 
     return action
 
@@ -308,6 +296,8 @@ class Financial_Network_Env(gym.Env):
     # Process the cash allocation for solvent banks
     rewards += process_creditors(solvent_banks)
 
+    rewards = np.sum(rewards)
+
     return rewards
 
 
@@ -335,6 +325,8 @@ class Financial_Network_Env(gym.Env):
     :param  action  np.matrix where each cell is the percentage of the cash position to allocate
     :output None
     """
+    action  = action.reshape(self.number_of_banks, self.number_of_banks)
+
     # Normalize the cash distribution to 100%
     action = self._normalize_cash_distribution(action)
 
@@ -357,13 +349,13 @@ if __name__ == "__main__":
 
   observations = environment.reset()
   for _ in range(3):
-      action = np.array([ [0.2,   0.5,  0.3],
-                          [0.0,   1.0,  0.0],
-                          [0.3,   0.3,  0.3]]
-                          )
-      observations, rewards, done, info = environment.step(action)
-      
-      print(f'Episode finished? {done}\nAgent rewards {rewards}')
+    action = np.array([ [0.2,   0.5,  0.3],
+                        [0.0,   1.0,  0.0],
+                        [0.3,   0.3,  0.3]]
+                        )
+    observations, rewards, done, info = environment.step(action)
+    
+    print(f'Episode finished? {done}\nAgent rewards {rewards}')
 
-      if done:
-        observations = environment.reset()
+    if done:
+      observations = environment.reset()

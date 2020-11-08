@@ -1,10 +1,9 @@
 import gym
 from financial_network.envs.financial_network_env import Financial_Network_Env
 
-
 from stable_baselines.common.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
-from stable_baselines import PPO2
+from stable_baselines import PPO2, A2C
 
 DEBUG = True
 
@@ -22,7 +21,8 @@ if __name__ == "__main__":
 
     print(f'Testing model on environment')
     observations = environment.reset()
-    for _ in range(5):
-        action = [0]
+    done = False
+    while not done:
+        action, _ = model.predict(observations)
         observations, rewards, done, info = environment.step(action)
         environment.render()
