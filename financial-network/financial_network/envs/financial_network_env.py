@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 from gym import error, spaces, utils
-from financial_graph import Financial_Graph
+from .financial_graph import Financial_Graph
 
 DEBUG = False
 
