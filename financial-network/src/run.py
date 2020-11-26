@@ -21,13 +21,14 @@ if __name__ == "__main__":
 
     # Directory to the model results
     model_dir = f"models/"
+    weights_dir= f"models/weights.zip"
 
     # Make the directory if the model does not exist
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
     
     # save the model
-    model.save('models/weights.zip')
+    model.save(weights_dir)
 
 
     # store the rewards
