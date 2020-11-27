@@ -1,7 +1,13 @@
 import gym
 import numpy as np
 from gym import error, spaces, utils
+
+# If debugging in this file, uncomment this line
+# from financial_graph import Financial_Graph
+
+# Otherwise, use this line
 from .financial_graph import Financial_Graph
+
 
 DEBUG = False
 
@@ -55,10 +61,11 @@ class Financial_Network_Env(gym.Env):
     self.timestep += 1
 
     # Allocate the cash as the agents requested
-    rewards = self.financial_graph.take_action(action)
+    rewards       = self.financial_graph.take_action(action)
     observations  = self.financial_graph.get_observation()
     done          = self._determine_if_episode_is_done()
-    info          = {}
+    info          = {'net_position':self.financial_graph.get_system_net_position(),\
+                    }
 
     return observations, rewards, done, info
 
