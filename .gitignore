@@ -1,6 +1,9 @@
 # Project Specific
 .vscode
 .disco_financial_network
+financial-network/models
+financial-network/log
+financial-networks.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
