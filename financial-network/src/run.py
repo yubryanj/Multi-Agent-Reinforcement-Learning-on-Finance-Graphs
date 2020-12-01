@@ -7,7 +7,7 @@ from stable_baselines import PPO2
 import os
 import numpy as np
 
-DEBUG = True
+DEBUG = False
 
 
 if __name__ == "__main__":
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     environment = DummyVecEnv([lambda: Financial_Network_Env()])
 
     # Define the agent model
-    agent = PPO2(MlpPolicy, environment, verbose=0,tensorboard_log="log/")
+    agent = PPO2(MlpPolicy, environment, verbose=0)
 
     # If there are not weights already
     if not os.path.exists(weights_dir):
