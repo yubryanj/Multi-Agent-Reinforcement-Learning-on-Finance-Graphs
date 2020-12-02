@@ -1,4 +1,5 @@
 from financial_network.envs.financial_network_env import Financial_Network_Env
+from financial_network.envs.independent_q_agent import IndependentQAgent
 
 from stable_baselines.common.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
@@ -20,7 +21,9 @@ if __name__ == "__main__":
     environment = DummyVecEnv([lambda: Financial_Network_Env()])
 
     # Define the agent model
-    agent = PPO2(MlpPolicy, environment, verbose=0)
+    # agent = PPO2(MlpPolicy, environment, verbose=0)
+
+    agent = IndependentQAgent(environment)
 
     # If there are not weights already
     if not os.path.exists(weights_dir):
@@ -50,7 +53,7 @@ if __name__ == "__main__":
     # store the rewards
     net_positions = []
 
-    print(f"Evaluating performance: running 10 episode and storing the results.")
+    print(f"Evaluating performance: running 100 episode and storing the results.")
     for _ in range(100):
         observations = environment.reset()
         done = False
