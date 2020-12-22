@@ -12,7 +12,8 @@ def get_args():
     # Environment
     parser.add_argument("--scenario-name", type=str, default="simple_tag", help="name of the scenario script")
     parser.add_argument("--max-episode-length", type=int, default=100, help="maximum episode length")
-    parser.add_argument("--time-steps", type=int, default=2000000, help="number of time steps")
+    #parser.add_argument("--time-steps", type=int, default=2000000, help="number of time steps")
+    parser.add_argument("--time-steps", type=int, default=2000, help="number of time steps")
     parser.add_argument("--n-agents", type=int, default=3, help="number of agents")
     parser.add_argument("--num-adversaries", type=int, default=1, help="number of adversaries")
 
