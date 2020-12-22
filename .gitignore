@@ -4,6 +4,7 @@
 financial-network/models
 financial-network/log
 financial-networks.*
+multi_agent/model/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

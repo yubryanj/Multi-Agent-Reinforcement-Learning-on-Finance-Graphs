@@ -13,7 +13,7 @@ class Buffer:
         self.buffer = dict()
 
         for agent_identifier in range(self.args.n_agents):
-            self.buffer[f'observation_{agent_identifier}'] = np.empty([self.max_size, self.args.obs_shape[agent_identifier]])
+            self.buffer[f'observations_{agent_identifier}'] = np.empty([self.max_size, self.args.obs_shape[agent_identifier]])
             self.buffer[f'actions_{agent_identifier}'] = np.empty([self.max_size, self.args.action_shape[agent_identifier]])
             self.buffer[f'rewards_{agent_identifier}'] = np.empty([self.max_size])
             self.buffer[f'next_observations_{agent_identifier}'] = np.empty([self.max_size, self.args.obs_shape[agent_identifier]])
@@ -21,7 +21,7 @@ class Buffer:
         self.lock = threading.Lock()
 
     
-    def store_episodes(self, observation, action, reward, next_observation):
+    def store_episode(self, observation, action, reward, next_observation):
         """
         Store the observation, action, reward, and next observation quadruple from the current episode
         :param  None
@@ -34,7 +34,7 @@ class Buffer:
         for agent_identifier in range(self.args.n_agents):
             # Retrieve the lock so that the data is updated simultaneously
             with self.lock:
-                self.buffer[f'observation_{agent_identifier}'][indices] = observation[agent_identifier]
+                self.buffer[f'observations_{agent_identifier}'][indices] = observation[agent_identifier]
                 self.buffer[f'actions_{agent_identifier}'][indices] = action[agent_identifier]
                 self.buffer[f'rewards_{agent_identifier}'][indices] = reward[agent_identifier]
                 self.buffer[f'next_observations_{agent_identifier}'][indices] = next_observation[agent_identifier]

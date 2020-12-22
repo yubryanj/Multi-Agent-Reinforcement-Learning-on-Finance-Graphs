@@ -1,4 +1,4 @@
-from trainer import Trainer
+from runner import Runner
 from common.args import get_args
 from common.utils import make_env
 
@@ -10,12 +10,12 @@ if __name__ == "__main__":
     env, args = make_env(args)
 
     # Initialize the trainer module
-    trainer = Trainer(args, env)
+    runner = Runner(args, env)
 
     # If the evaulation flag is enabled, evaluate the model
     if args.evaluate:
-        returns = trainer.evaluate()
+        returns = runner.evaluate()
         print(f'Average return is {returns}')
     else:
         # Else train the model
-        trainer.train()
+        runner.run()

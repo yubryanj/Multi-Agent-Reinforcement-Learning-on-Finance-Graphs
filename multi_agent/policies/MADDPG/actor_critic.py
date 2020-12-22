@@ -13,7 +13,7 @@ class Actor(nn.Module):
         self.max_action = args.high_action
         self.fc1 = nn.Linear(args.obs_shape[agent_identifier], 64)
         self.fc2 = nn.Linear(64,64)
-        self.gc3 = nn.Linear(64,64)
+        self.fc3 = nn.Linear(64,64)
         self.action_out = nn.Linear(64, args.action_shape[agent_identifier])
 
     def forward(self, x):
@@ -30,7 +30,7 @@ class Actor(nn.Module):
 
 class Critic(nn.Module):
     def __init__(self, args) -> None:
-        super(Critic).__init__()
+        super(Critic, self).__init__()
         self.max_action = args.high_action
         self.fc1 = nn.Linear(sum(args.obs_shape) + sum(args.action_shape), 64)
         self.fc2 = nn.Linear(64,64)

@@ -16,6 +16,10 @@ class MADDPG:
         self.actor_target_network = Actor(args, agent_identifier)
         self.critic_target_network = Critic(args)
 
+        # load the weights into the target network -- both networks initializes to same place
+        self.actor_target_network.load_state_dict(self.actor_network.state_dict())
+        self.critic_target_network.load_state_dict(self.critic_network.state_dict())
+
         # Create the optimizer
         self.actor_optimizer = torch.optim.Adam(self.actor_network.parameters(), lr=self.args.lr_actor)
         self.critic_optimizer = torch.optim.Adam(self.critic_network.parameters(), lr=self.args.lr_critic)
@@ -57,7 +61,7 @@ class MADDPG:
             target_param.data.copy_((1-self.args.tau) * target_param.data + self.args.tau * param.data)
 
         # Update the critic network
-        for target_param, param in zip(self.critic_target.parameters(), self.critic_network.parameters()):
+        for target_param, param in zip(self.critic_target_network.parameters(), self.critic_network.parameters()):
             target_param.data.copy_((1-self.args.tau) * target_param.data + self.args.tau * param.data)
 
 
@@ -73,7 +77,7 @@ class MADDPG:
             transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
         
         # Retrieve the rewards
-        rewards = transitions[f'r_{self.agent_id}']
+        rewards = transitions[f'rewards_{self.agent_identifer}']
         
         # Allocate lists to store the observation, action, and next observation triplets
         observations, actions, next_observations = [], [], []
@@ -81,8 +85,8 @@ class MADDPG:
         # Store the triplet for each agent in the given transition
         for agent_identifier in range(self.args.n_agents):
             observations.append(transitions[f'observations_{agent_identifier}'])
-            actions.append(transitions[f'actions{agent_identifier}'])
-            next_observations.append(transitions[f'next_observations{agent_identifier}'])
+            actions.append(transitions[f'actions_{agent_identifier}'])
+            next_observations.append(transitions[f'next_observations_{agent_identifier}'])
 
         # Calculate the target Q Value
         next_action = []
@@ -114,7 +118,7 @@ class MADDPG:
         actions[self.agent_identifer] = self.actor_network(observations[self.agent_identifer])
         
         # Calcu
-        actor_loss = - self.critic_ntwork(observations, actions).mean()
+        actor_loss = - self.critic_network(observations, actions).mean()
 
         # Clear the actor gradients for back propagation
         self.actor_optimizer.zero_grad()
@@ -146,6 +150,7 @@ class MADDPG:
         Save the model
         :param  train_step  current training step, used for naming
         """
+        print("Saving model")
 
         num = str(train_step // self.args.save_rate)
         model_path = os.path.join(self.args.save_dir, self.args.scenario_name)
