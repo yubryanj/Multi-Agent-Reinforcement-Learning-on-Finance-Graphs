@@ -47,7 +47,7 @@ class Runner:
                     # store the action 
                     u.append(action)
                     actions.append(action)
-            
+
             # Take the next action; retrieve next tate, reward, done, and additional information
             next_state, reward, done, info = self.env.step(actions)
 
@@ -85,18 +85,17 @@ class Runner:
             np.save(f'{self.save_path}/returns.pkl', returns)
 
 
-
     def evaluate(self):
-        returns = []
+        net_positions = []
         for episode in range(self.args.evaluate_episodes):
             # reset the environment
             s = self.env.reset()
-            rewards = 0
+
             # Obtain the results for a series of trainings
             for time_step in range(self.args.evaluate_episode_len):
-                # Show the results
-                self.env.render()
+
                 actions = []
+                
                 # Zero out the gradients
                 with torch.no_grad():
                     for agent_id, agent in enumerate(self.agents):
@@ -105,12 +104,13 @@ class Runner:
                         actions.append(action)
                 
                 # Take the next action
-                s_next, r, done, info = self.env.step(actions)
-                # Update the rewards
-                rewards += r[0]
+                s_next, rewards, done, info = self.env.step(actions)
+
                 # Update the state
                 s = s_next
             # Store the cumulative rewards
-            returns.append(rewards)
-            print('Returns is', rewards)
-        return sum(returns) / self.args.evaluate_episodes
+            net_positions.append(info['net_position'])
+
+        print(f"Average systems net position is {np.mean(info['net_position'])}")
+
+        return np.mean(net_positions)

@@ -25,7 +25,8 @@ class Agent:
 
         # Take the epsilon step
         if np.random.uniform() < epsilon:
-            action = np.random.uniform(-self.args.high_action, self.args.high_action, self.args.action_shape[self.agent_id])
+            action = np.random.uniform(0, self.args.low_action, self.args.action_shape[self.agent_id]).reshape(1,-1)
+
         else:
             # Take the greedy step  
 
@@ -45,7 +46,7 @@ class Agent:
             action += noise
             
             # Clip the action to the acceptable bounds
-            action = np.clip(action, -self.args.high_action, self.args.high_action)
+            action = np.clip(action, self.args.low_action, self.args.high_action)
 
         return action.copy()
 
