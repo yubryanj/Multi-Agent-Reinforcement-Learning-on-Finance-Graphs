@@ -16,13 +16,13 @@ class Runner:
         self.env = env
         self.agents = self._init_agents()
         self.buffer = Buffer(args)
-        self.save_path = self.args.save_dir + '/' + self.args.scenario_name
+        self.save_path = self.args.save_dir
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
 
     def _init_agents(self):
         agents = []
-        for i in range(self.args.n_agents):
+        for i in range(self.args.n_banks):
             agent = Agent(i, self.args)
             agents.append(agent)
         return agents
@@ -47,16 +47,12 @@ class Runner:
                     # store the action 
                     u.append(action)
                     actions.append(action)
-
-            # Gives a random action to each non-controlled agent
-            for i in range(self.args.n_agents, self.args.n_players):
-                actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
             
             # Take the next action; retrieve next tate, reward, done, and additional information
             next_state, reward, done, info = self.env.step(actions)
 
             # Store the episode in the replay buffer
-            self.buffer.store_episode(state[:self.args.n_agents], u, reward[:self.args.n_agents], next_state[:self.args.n_agents])
+            self.buffer.store_episode(state[:self.args.n_banks], u, reward[:self.args.n_banks], next_state[:self.args.n_banks])
 
             # Update the state
             state = next_state
@@ -107,10 +103,6 @@ class Runner:
                         # Select the action for the given agent
                         action = agent.select_action(s[agent_id], 0, 0)
                         actions.append(action)
-                
-                # TODO: What is happening here? Is this just filling in code?
-                for i in range(self.args.n_agents, self.args.n_players):
-                    actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
                 
                 # Take the next action
                 s_next, r, done, info = self.env.step(actions)

@@ -10,11 +10,12 @@ def get_args():
     parser = argparse.ArgumentParser("Multi Agent Systems for Financial Graphs")
     
     # Environment
-    parser.add_argument("--scenario-name", type=str, default="simple_tag", help="name of the scenario script")
     parser.add_argument("--max-episode-len", type=int, default=100, help="maximum episode length")
     parser.add_argument("--time-steps", type=int, default=100000, help="number of time steps")
-    parser.add_argument("--n-agents", type=int, default=3, help="number of agents")
-    parser.add_argument("--num-adversaries", type=int, default=1, help="number of adversaries")
+    parser.add_argument("--number-of-banks", type=int, default=3, help="number of banks")
+    parser.add_argument("--cash-in-circulation", type=int, default=1000, help="amount of fiat currency in the system")
+    parser.add_argument("--haircut-multiplier", type=int, default=3, help="discount applied to insolvent banks")
+    parser.add_argument("--n-banks", type=int, default=3, help="number of banks")
 
 
     # Training parameters
@@ -30,7 +31,6 @@ def get_args():
     # Saving and checkpoints
     parser.add_argument("--save-dir", type=str, default="./multi_agent/model", help="directory in which training state and model should be saved")
     parser.add_argument("--save-rate", type=int, default=2000, help="save model once every time this many episodes are completed")
-    parser.add_argument("--model-dir", type=str, default="", help="directory in which training state and model are loaded")
 
     # Evaluate
     parser.add_argument("--evaluate-episodes", type=int, default=10, help="number of episodes for evaluating")

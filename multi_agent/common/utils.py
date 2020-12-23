@@ -1,30 +1,10 @@
-import numpy as np
-
+from financial_network_ma.envs.financial_network_env_ma import Financial_Network_Env_Multi_Agent
 
 def make_env(args):
-    from multiagent.environment import MultiAgentEnv
-    import multiagent.scenarios as scenarios
-
-    scenario = scenarios.load(args.scenario_name + ".py").Scenario()
-
-    world = scenario.make_world()
-
-    env = MultiAgentEnv(world,  reset_callback = scenario.reset_world,\
-                                reward_callback = scenario.reward, \
-                                observation_callback = scenario.observation
-                            )
-
-    args.n_players = env.n
-    args.n_agents   = env.n - args.num_adversaries
-    args.obs_shape = [env.observation_space[i].shape[0] for i in range(args.n_agents)]
-
-    action_shape = []
-
-    for content in env.action_space:
-        action_shape.append(content.n)
-
-    args.action_shape = action_shape[:args.n_agents]
+    env = Financial_Network_Env_Multi_Agent(args)
+    args.obs_shape = [env.observation_space[i].shape[1] for i in range(args.n_banks)]
+    args.action_shape = [env.action_space[i].shape[1] for i in range(args.n_banks)]
     args.high_action = 1
-    args.low_action = -1
+    args.low_action = 0
     
     return env, args

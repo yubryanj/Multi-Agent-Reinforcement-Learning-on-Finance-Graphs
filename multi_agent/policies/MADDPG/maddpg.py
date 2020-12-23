@@ -27,25 +27,20 @@ class MADDPG:
         #Create the directory structure for storing models
         if not os.path.exists(self.args.save_dir):
             os.mkdir(self.args.save_dir)
-        
-        # Create the directory for saving models
-        self.model_path = f'{self.args.save_dir}/{self.args.scenario_name}'
-        if not os.path.exists(self.model_path):
-            os.mkdir(self.model_path)
 
         # Create the directory for this agent
-        self.agent_path = f'{self.model_path}/agent_{agent_identifier}'
+        self.agent_path = f'{self.args.save_dir}/agent_{agent_identifier}'
         if not os.path.exists(self.agent_path):
             os.mkdir(self.agent_path)
 
         # If a trained actor model is available
-        if os.path.exists(f'{self.model_path}/actor_params.pkl'):
-            self.actor_network.load_state_dict(torch.load(f'{self.model_path}/actor_params.pkl'))
+        if os.path.exists(f'{self.agent_path}/actor_params.pkl'):
+            self.actor_network.load_state_dict(torch.load(f'{self.agent_path}/actor_params.pkl'))
             print(f' Agent {agent_identifier} successfully loaded actor network!')
 
         # If a trained critic model is available
-        if os.path.exists(f'{self.model_path}/critic_params.pkl'):
-            self.critic_network.load_state_dict(torch.load(f'{self.model_path}/critic_params.pkl'))
+        if os.path.exists(f'{self.agent_path}/critic_params.pkl'):
+            self.critic_network.load_state_dict(torch.load(f'{self.agent_path}/critic_params.pkl'))
             print(f' Agent {agent_identifier} successfully loaded critic network!')
 
 
@@ -83,7 +78,7 @@ class MADDPG:
         observations, actions, next_observations = [], [], []
 
         # Store the triplet for each agent in the given transition
-        for agent_identifier in range(self.args.n_agents):
+        for agent_identifier in range(self.args.n_banks):
             observations.append(transitions[f'observations_{agent_identifier}'])
             actions.append(transitions[f'actions_{agent_identifier}'])
             next_observations.append(transitions[f'next_observations_{agent_identifier}'])
@@ -94,7 +89,7 @@ class MADDPG:
         with torch.no_grad():
             index = 0 
             # Calculate the next action for each agent
-            for agent_identifier in range(self.args.n_agents):
+            for agent_identifier in range(self.args.n_banks):
                 if agent_identifier == self.agent_identifer:
                     next_action.append(self.actor_target_network(next_observations[agent_identifier]))
                 else:
@@ -153,11 +148,13 @@ class MADDPG:
         print("Saving model")
 
         num = str(train_step // self.args.save_rate)
-        model_path = os.path.join(self.args.save_dir, self.args.scenario_name)
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
-        agent_path = os.path.join(model_path, f'agent_{self.agent_identifer}')
-        if not os.path.exists(agent_path):
-            os.makedirs(agent_path)
-        torch.save(self.actor_network.state_dict(), f'{agent_path}/{num}_actor_params.pkl')
-        torch.save(self.critic_network.state_dict(), f'{agent_path}/{num}_critic_params.pkl')
+
+        #Create the directory structure for storing models
+        if not os.path.exists(self.args.save_dir):
+            os.mkdir(self.args.save_dir)
+        if not os.path.exists(self.agent_path):
+            os.mkdir(self.agent_path)
+
+
+        torch.save(self.actor_network.state_dict(), f'{self.agent_path}/{num}_actor_params.pkl')
+        torch.save(self.critic_network.state_dict(), f'{self.agent_path}/{num}_critic_params.pkl')
