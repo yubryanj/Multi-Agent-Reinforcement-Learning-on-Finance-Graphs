@@ -1,5 +1,4 @@
 from financial_network.envs.financial_network_env import Financial_Network_Env
-from financial_network.envs.independent_q_agent import IndependentQAgent
 
 from stable_baselines.common.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
@@ -21,9 +20,7 @@ if __name__ == "__main__":
     environment = DummyVecEnv([lambda: Financial_Network_Env()])
 
     # Define the agent model
-    # agent = PPO2(MlpPolicy, environment, verbose=0)
-
-    agent = IndependentQAgent(environment)
+    agent = PPO2(MlpPolicy, environment, verbose=0)
 
     # If there are not weights already
     if not os.path.exists(weights_dir):
@@ -31,7 +28,7 @@ if __name__ == "__main__":
         print(f'Beginning to train model...') if DEBUG else None
         
         # Train the model
-        agent.learn(int(1e7))
+        agent.learn(int(1e5))
 
         print(f'Training completed!') if DEBUG else None
 
@@ -46,7 +43,7 @@ if __name__ == "__main__":
         print(f"Loading the weights!") if DEBUG else None
         
         # Load the learned weights
-        agent.load(weights_dir)
+        agent = PPO2.load(weights_dir)
 
         print(f"Weights successfully loaded!") if DEBUG else None
 

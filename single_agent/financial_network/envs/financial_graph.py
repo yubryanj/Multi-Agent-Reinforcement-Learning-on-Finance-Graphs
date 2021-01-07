@@ -78,14 +78,17 @@ class Financial_Graph():
         Test version of initialization
         """
         # Debts are organized as row owes column
-        debts = np.array([[00.0,  10.0, 20.0],
-                        [00.0,  00.0, 50.0],
-                        [30.0,  50.0, 00.0]])
+        debts = np.array([  [00.0,  00.0, 00.0],
+                            [00.0,  00.0, 50.0],
+                            [00.0,  2500.0, 00.0]])
 
-        # Note, bank 1 is in default, with 20 units more debt than cash
-        cash = np.array(  [200.0, 100.0, 30.0] )
+        # Note, bank 2 is in default, with 20 units more debt than cash
+        # Only bank 0 can save bank 2 with a transfusion of >= 100 or 50 percent of its current asset base
+        # Bank 1 will be fine without doing anything.
+        cash = np.array(  [2000.0, 50.0, 1500.0] )
 
         return debts, cash 
+
 
 
     def compute_system_value(self):
@@ -194,8 +197,11 @@ class Financial_Graph():
             # get the number of creditors
             number_of_creditors = len(creditors)
 
-            # Calculate amount to distribute to each creditor
-            amount_distributed_to_each_creditor = self.cash_position[bank] / number_of_creditors
+            if number_of_creditors > 0:
+                # Calculate amount to distribute to each creditor
+                amount_distributed_to_each_creditor = self.cash_position[bank] / number_of_creditors
+            else:
+                amount_distributed_to_each_creditor = 0
 
             # Close the debt owed to each creditor
             for creditor in creditors:
