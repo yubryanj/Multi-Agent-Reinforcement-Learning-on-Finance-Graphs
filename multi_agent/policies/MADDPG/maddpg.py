@@ -145,9 +145,9 @@ class MADDPG:
         Save the model
         :param  train_step  current training step, used for naming
         """
-        print("Saving model")
-
         num = str(train_step // self.args.save_rate)
+        
+        print(f"Saving model at timestep {train_step} at {self.agent_path}/{num}_actor_params.pkl, {self.agent_path}/{num}_critic_parms.pkl")
 
         #Create the directory structure for storing models
         if not os.path.exists(self.args.save_dir):

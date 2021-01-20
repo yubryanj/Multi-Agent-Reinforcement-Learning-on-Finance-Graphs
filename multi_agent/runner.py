@@ -4,7 +4,8 @@ from common.replay_buffer import Buffer
 import torch
 import os
 import numpy as np
-import matplotlib.pyplot as plt
+import copy
+
 
 
 class Runner:
@@ -29,13 +30,14 @@ class Runner:
 
     def run(self):
         returns = []
+        average_net_position = float('-inf')
 
         # Run this loop repeatedly
         for time_step in tqdm(range(self.args.time_steps)):
-            # reset the environment
-            if time_step % self.episode_limit == 0:
-                # get the first sample
-                state = self.env.reset()
+            
+            # reset the environment and get the first sample
+            state, _ = self.env.reset(evaluate=False)
+
             u = []
             actions = []
 
@@ -48,7 +50,7 @@ class Runner:
                     u.append(action)
                     actions.append(action)
 
-            # Take the next action; retrieve next tate, reward, done, and additional information
+            # Take the next action; retrieve next state, reward, done, and additional information
             next_state, reward, done, info = self.env.step(actions)
 
             # Store the episode in the replay buffer
@@ -75,21 +77,30 @@ class Runner:
 
             # Evaluate the learning
             if time_step >0 and time_step % self.args.evaluate_rate == 0:
-                returns.append(self.evaluate())
+                print(f'Timestep {time_step}: Conducting an evaluation:')
+                average_net_position = self.evaluate()
+                returns.append(average_net_position)
 
             # Generate Noise
             self.noise = max(0.05, self.noise - 0.0000005)
             self.epsilon = max(0.05, self.noise - 0.0000005)
 
-            # Save the weights
+            # Save the returns
             np.save(f'{self.save_path}/returns.pkl', returns)
 
 
     def evaluate(self):
+        # Allocate lists to store results from info
         net_positions = []
+        system_configurations = []
+
+
         for episode in range(self.args.evaluate_episodes):
+
             # reset the environment
-            s = self.env.reset()
+            s, info = self.env.reset(evaluate=True)
+
+            system_configurations.append({'initial_configurations':copy.deepcopy(info)})
 
             # Obtain the results for a series of trainings
             for time_step in range(self.args.evaluate_episode_len):
@@ -103,14 +114,29 @@ class Runner:
                         action = agent.select_action(s[agent_id], 0, 0)
                         actions.append(action)
                 
+                # Establish a baseline by doing nothing
+                if self.args.do_nothing:
+                    actions = np.zeros((self.args.n_banks, self.args.n_banks))
+
                 # Take the next action
                 s_next, rewards, done, info = self.env.step(actions)
 
+                print(info['cash_position'])
+
                 # Update the state
                 s = s_next
+
+                # Store the action taken
+                system_configurations[-1]['action'] = copy.deepcopy(actions)
+                
             # Store the cumulative rewards
             net_positions.append(info['net_position'])
 
-        print(f"Average systems net position is {np.mean(info['net_position'])}")
+            system_configurations[-1]['final_configurations'] = copy.deepcopy(info)
+
+        print(f"Average systems net position over {self.args.evaluate_episodes} episodes is {np.mean(net_positions)}")
+
+        np.save("./data/evaluation-data",system_configurations)
 
         return np.mean(net_positions)
+

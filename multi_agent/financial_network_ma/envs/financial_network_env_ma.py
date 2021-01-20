@@ -62,9 +62,12 @@ class Financial_Network_Env_Multi_Agent(gym.Env):
     self.timestep += 1
 
     # # Allocate the cash as the agents requested
-    rewards       = self.financial_graph.take_action(action)
+    rewards       = self.financial_graph.take_action(action, reward_mode=self.args.reward_type)
     done          = self._determine_if_episode_is_done()
-    info          = {'net_position':self.financial_graph.get_system_net_position(),\
+    info          = { 'net_position':self.financial_graph.get_system_net_position(),\
+                      'individual_net_position':self.financial_graph.get_individual_net_position(),\
+                      'cash_position': self.financial_graph.cash_position,\
+                      'debts': self.financial_graph.debts
                     }
                     
     # Retrieve the observations of the resetted environment
@@ -74,13 +77,14 @@ class Financial_Network_Env_Multi_Agent(gym.Env):
       observations.append(self.financial_graph.get_observation(agent_identifier))
 
 
-    # Allocate the same reward to all the agents
-    rewards = np.ones(self.args.n_banks) * rewards
+    if self.args.reward_type == 'System':
+      # Allocate the same reward to all the agents
+      rewards = np.ones(self.args.n_banks) * rewards
 
     return observations, rewards, done, info
 
 
-  def reset(self):
+  def reset(self, evaluate=False):
     """
     Resets the environment to the initial state
     :param  None
@@ -92,7 +96,7 @@ class Financial_Network_Env_Multi_Agent(gym.Env):
     self.timestep = 0
 
     # Reset the environment
-    self.financial_graph.reset()
+    self.financial_graph.reset(evaluate=evaluate)
 
     # Retrieve the observations of the resetted environment
     observations = []
@@ -100,7 +104,13 @@ class Financial_Network_Env_Multi_Agent(gym.Env):
     for agent_identifier in range(self.args.n_banks):
       observations.append(self.financial_graph.get_observation(agent_identifier))
 
-    return observations
+    info = { 'net_position':self.financial_graph.get_system_net_position(),\
+              'individual_net_position':self.financial_graph.get_individual_net_position(),\
+              'cash_position': self.financial_graph.cash_position,\
+              'debts': self.financial_graph.debts
+          }
+
+    return observations, info
 
 
   def render(self, mode='human'):

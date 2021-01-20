@@ -29,14 +29,7 @@ class Financial_Graph():
         self.haircut_multiplier         = haircut_multiplier
         self.system_value_mode          = system_value_mode
         self.max_clearing_iterations    = 3
-        self.debts, self.cash_position  = self._initialize_banks(   number_of_banks=number_of_banks,\
-                                                                    cash_in_circulation=cash_in_circulation
-                                                                )
-
-        self.number_of_defaulting_banks = self.get_number_of_defaulting_banks()
-        self.number_of_solvent_banks    = self.get_number_of_solvent_banks()
-        self.system_net_position        = self.get_system_net_position()
-
+    
         print(f"Finished initializing financial graph!")
 
 
@@ -51,36 +44,71 @@ class Financial_Graph():
         return np.hstack((self.debts.reshape(1,-1), self.cash_position[agent_identifier].reshape(1,-1)))
 
         
-    def _initialize_banks(  self,\
-                            number_of_banks,\
-                            cash_in_circulation
-                            ):
+    def _initialize_banks(self, evaluate=False):
         """
-        Calculates the distribution of cash and debt across the entities
-        :param    scalar    number_of_banks       Number of banks in the network
-        :param    scalar    cash_in_circulation   Amount of cash to be allocated across the banks
-        :outputs  np.matrix debts                 A matrix showing the interbank debt 
-                                                network in notation: row owes column; 0s diagonal
-        :outputs  np.array  cash                  A vector showing the amount of cash at each bank
+        Initializes self.debts and self.cash_position 
+        This function is called whenever the environment is reset.
         """
 
-        """
-        Insert distribution
-        """
-        #TODO Write me 
+        if evaluate:        
+
+            # When evaluating, make sure that a situation exist where an agent can save a defaulting bank
+            while True:
+                self.debts = self._generate_debt_positions()
+                self.cash_position = self._generate_cash_position()
+
+                number_of_defaults = self.get_number_of_defaulting_banks()
+                total_debt_level = np.sum(self.debts)
+
+                if number_of_defaults > 1 and total_debt_level < self.cash_in_circulation:
+                    break
+        else:
+            # Otherwise, generate random scenarios for training
+            self.debts = self._generate_debt_positions()
+            self.cash_position = self._generate_cash_position()
         
-        """
-        Test version of initialization
-        """
-        # Debts are organized as row owes column
-        debts = np.array([[00.0,  10.0, 20.0],
-                        [00.0,  00.0, 50.0],
-                        [30.0,  50.0, 00.0]])
+        # """
+        # Test version of initialization
+        # """
+        # # Debts are organized as row owes column
+        # self.debts = np.array([  [00.0,  00.0, 00.0],
+        #                     [00.0,  00.0, 50.0],
+        #                     [00.0,  2500.0, 00.0]])
 
-        # Note, bank 1 is in default, with 20 units more debt than cash
-        cash = np.array(  [200.0, 100.0, 30.0] )
+        # # Note, bank 2 is in default, with 20 units more debt than cash
+        # # Only bank 0 can save bank 2 with a transfusion of >= 100 or 50 percent of its current asset base
+        # # Bank 1 will be fine without doing anything.
+        # self.cash_position = np.array(  [2000.0, 50.0, 1500.0] )
 
-        return debts, cash 
+
+    def _generate_debt_positions(self):
+
+        # Generate a random debts initialization
+        debts = np.random.rand(self.number_of_banks, self.number_of_banks)
+
+        # Set the diagonal to 0
+        np.fill_diagonal(debts, 0)
+
+        # Normalize the debt matrix to 1
+        debts = debts / np.sum(debts)
+
+        # apply a random debt level from the 
+        debts = debts * np.random.random_integers(0, self.cash_in_circulation * 2)
+
+        return debts
+
+    
+    def _generate_cash_position(self):
+        # Initialize the cash position
+        cash_position = np.random.rand(self.number_of_banks) 
+
+        # Normalize the cash distribution
+        cash_position = cash_position / np.sum(cash_position)
+        
+        #Allocate the cash
+        cash_position = cash_position * self.cash_in_circulation
+
+        return cash_position
 
 
     def compute_system_value(self):
@@ -142,7 +170,7 @@ class Financial_Graph():
         :output Boolean       True/False depending on computation
 
         """
-        if net_position <= 0:
+        if net_position < 0:
             return True
         return False
 
@@ -209,14 +237,21 @@ class Financial_Graph():
         self.cash_position[defaulting_banks] = 0
 
 
-    def take_action(self, action):
+    def take_action(self, action, reward_mode="Individual"):
         """
         Distributes cash as per the action requested by the agents
         :param  action  np.matrix where each cell is the percentage of the cash position to allocate
         :output reward  
         """
 
-        old_system_net_position = self.get_system_net_position()
+        assert(reward_mode in ['Individual','System'])
+
+        if reward_mode == "Individual":
+            calculate_net_position = self.get_individual_net_position
+        elif reward_mode == 'System':
+            calculate_net_position = self.get_system_net_position
+        
+        old_net_position = calculate_net_position()
 
         action  = action.reshape(self.number_of_banks, self.number_of_banks)
 
@@ -233,11 +268,39 @@ class Financial_Graph():
                 self.cash_position[from_bank]   -= amount
                 self.cash_position[to_bank]     += amount
 
-        new_system_net_position = self.get_system_net_position()
+        # Clear the system again after distributing the funds
+        self.clear()
 
-        reward = new_system_net_position - old_system_net_position
+        new_net_position = calculate_net_position()
+
+        reward = new_net_position - old_net_position
 
         return reward
+
+
+    def get_individual_net_position(self):
+        """
+        Returns the net position of the individual (i.e. cash -  debt)
+        Consider -- that the system should be cleared and debt should be equal to 0
+        :params     None
+        :outputs    individual_net_position     net cash position of the system post clearing
+        """
+
+        # Get the current system configuration
+        backup_cash_position = np.copy(self.cash_position)
+        backup_debt_position = np.copy(self.debts)
+
+        # Apply the recursive clearing system
+        self.clear()
+
+        # Calculate the net position of the system after clearing
+        individual_net_position  = self.cash_position - np.sum(self.debts, axis=1)
+        
+        # Restore the original system state
+        self.cash_position  = backup_cash_position
+        self.debts          = backup_debt_position
+        
+        return individual_net_position
 
 
     def _normalize_cash_distribution(self, action):
@@ -254,15 +317,17 @@ class Financial_Graph():
         return action
 
 
-    def reset(self):
+    def reset(self, evaluate=False):
         """
         Resets the environment
         :param  None
         :output None
         """
-        self.debts, self.cash_position = self._initialize_banks(  number_of_banks=self.number_of_banks,\
-                                                                  cash_in_circulation=self.cash_in_circulation
-                                                                )
+        self._initialize_banks(evaluate=evaluate)
+        self.number_of_defaulting_banks = self.get_number_of_defaulting_banks()
+        self.number_of_solvent_banks    = self.get_number_of_solvent_banks()
+        self.system_net_position        = self.get_system_net_position()
+
 
     
     def clear(self):
@@ -291,6 +356,7 @@ class Financial_Graph():
                 break
 
             iterations += 1
+
 
     def get_number_of_solvent_banks(self):
         """
@@ -333,6 +399,32 @@ class Financial_Graph():
         self.debts          = backup_debt_position
         
         return system_net_position
+
+
+    def get_agent_net_position(self):
+        """
+        Returns the net position of the system (i.e. total cash - total debt)
+        Consider -- that the system should be cleared and debt should be equal to 0
+        :params     None
+        :outputs    agent_net_position     net cash position of the agents post clearing
+        """
+
+        # Get the current system configuration
+        backup_cash_position = np.copy(self.cash_position)
+        backup_debt_position = np.copy(self.debts)
+
+        # Apply the recursive clearing system
+        self.clear()
+
+        # Calculate the net position of the system after clearing
+        agent_net_position = self.cash_position - np.sum(self.debts,axis=1)
+        
+        # Restore the original system state
+        self.cash_position  = backup_cash_position
+        self.debts          = backup_debt_position
+        
+        return agent_net_position
+
 
 if __name__ == "__main__":
     fg = Financial_Graph()

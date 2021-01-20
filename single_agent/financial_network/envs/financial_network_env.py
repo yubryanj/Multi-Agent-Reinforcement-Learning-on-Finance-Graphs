@@ -17,7 +17,8 @@ class Financial_Network_Env(gym.Env):
   def __init__(self,  number_of_banks     = 3,   \
                       cash_in_circulation = 1000,\
                       haircut_multiplier  = 0.9,\
-                      terminal_timestep   = 1):
+                      terminal_timestep   = 1,
+                      evaluate = False):
 
     print("Initializing environment") if DEBUG else None
 
@@ -43,6 +44,8 @@ class Financial_Network_Env(gym.Env):
                                             cash_in_circulation=cash_in_circulation,\
                                             haircut_multiplier = haircut_multiplier,\
                                           )
+
+    self.evaluate = evaluate
 
     print("Finished initializing environment") if DEBUG else None
 
@@ -70,7 +73,7 @@ class Financial_Network_Env(gym.Env):
     return observations, rewards, done, info
 
 
-  def reset(self):
+  def reset(self, evaluate=False):
     """
     Resets the environment to the initial state
     :param  None
@@ -82,7 +85,7 @@ class Financial_Network_Env(gym.Env):
     self.timestep = 0
 
     # Reset the environment
-    self.financial_graph.reset()
+    self.financial_graph.reset(evaluate)
 
     # Retrieve the observations of the resetted environment
     observations = self.financial_graph.get_observation()

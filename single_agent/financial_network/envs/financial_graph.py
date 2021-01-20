@@ -28,13 +28,6 @@ class Financial_Graph():
         self.cash_in_circulation        = cash_in_circulation
         self.haircut_multiplier         = haircut_multiplier
         self.system_value_mode          = system_value_mode
-        self.debts, self.cash_position  = self._initialize_banks(   number_of_banks=number_of_banks,\
-                                                                    cash_in_circulation=cash_in_circulation
-                                                                )
-
-        self.number_of_defaulting_banks = self.get_number_of_defaulting_banks()
-        self.number_of_solvent_banks    = self.get_number_of_solvent_banks()
-        self.system_net_position        = self.get_system_net_position()
 
         print(f"Finished initializing financial graph!")
 
@@ -62,32 +55,71 @@ class Financial_Graph():
         :outputs  np.array  cash                  A vector showing the amount of cash at each bank
         """
 
+    def _initialize_banks(self, evaluate=False):
         """
-        Insert distribution
+        Initializes self.debts and self.cash_position 
+        This function is called whenever the environment is reset.
         """
-        # debts = np.random.uniform(size=(number_of_banks,number_of_banks))
-        # cash  = np.random.uniform(size=(number_of_banks))
 
-        # # Normalize the amount of cash in circulation
-        # cash /=np.sum(cash)
-        # cash *= cash_in_circulation
+        if evaluate:        
 
-        # print(f'Debts: \n{debts}\n\nCash:\n{cash}') if DEBUG else None
+            # When evaluating, make sure that a situation exist where an agent can save a defaulting bank
+            while True:
+                self.debts = self._generate_debt_positions()
+                self.cash_position = self._generate_cash_position()
 
-        """
-        Test version of initialization
-        """
-        # Debts are organized as row owes column
-        debts = np.array([  [00.0,  00.0, 00.0],
-                            [00.0,  00.0, 50.0],
-                            [00.0,  2500.0, 00.0]])
+                number_of_defaults = self.get_number_of_defaulting_banks()
+                total_debt_level = np.sum(self.debts)
 
-        # Note, bank 2 is in default, with 20 units more debt than cash
-        # Only bank 0 can save bank 2 with a transfusion of >= 100 or 50 percent of its current asset base
-        # Bank 1 will be fine without doing anything.
-        cash = np.array(  [2000.0, 50.0, 1500.0] )
+                if number_of_defaults > 1 and total_debt_level < self.cash_in_circulation:
+                    break
+        else:
+            # Otherwise, generate random scenarios for training
+            self.debts = self._generate_debt_positions()
+            self.cash_position = self._generate_cash_position()
+        
+        # """
+        # Test version of initialization
+        # """
+        # # Debts are organized as row owes column
+        # self.debts = np.array([  [00.0,  00.0, 00.0],
+        #                     [00.0,  00.0, 50.0],
+        #                     [00.0,  2500.0, 00.0]])
 
-        return debts, cash 
+        # # Note, bank 2 is in default, with 20 units more debt than cash
+        # # Only bank 0 can save bank 2 with a transfusion of >= 100 or 50 percent of its current asset base
+        # # Bank 1 will be fine without doing anything.
+        # self.cash_position = np.array(  [2000.0, 50.0, 1500.0] )
+
+    def _generate_debt_positions(self):
+
+        # Generate a random debts initialization
+        debts = np.random.rand(self.number_of_banks, self.number_of_banks)
+
+        # Set the diagonal to 0
+        np.fill_diagonal(debts, 0)
+
+        # Normalize the debt matrix to 1
+        debts = debts / np.sum(debts)
+
+        # apply a random debt level from the 
+        debts = debts * np.random.random_integers(0, self.cash_in_circulation * 2)
+
+        return debts
+
+
+    
+    def _generate_cash_position(self):
+        # Initialize the cash position
+        cash_position = np.random.rand(self.number_of_banks) 
+
+        # Normalize the cash distribution
+        cash_position = cash_position / np.sum(cash_position)
+        
+        #Allocate the cash
+        cash_position = cash_position * self.cash_in_circulation
+
+        return cash_position
 
 
 
@@ -262,15 +294,16 @@ class Financial_Graph():
         return action
 
 
-    def reset(self):
+    def reset(self,evaluate=False):
         """
         Resets the environment
         :param  None
         :output None
         """
-        self.debts, self.cash_position = self._initialize_banks(  number_of_banks=self.number_of_banks,\
-                                                                  cash_in_circulation=self.cash_in_circulation
-                                                                )
+        self._initialize_banks(evaluate=evaluate)
+        self.number_of_defaulting_banks = self.get_number_of_defaulting_banks()
+        self.number_of_solvent_banks    = self.get_number_of_solvent_banks()
+        self.system_net_position        = self.get_system_net_position()
 
     
     def clear(self):

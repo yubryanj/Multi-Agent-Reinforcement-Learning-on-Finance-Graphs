@@ -15,7 +15,6 @@ if __name__ == "__main__":
     # If the evaulation flag is enabled, evaluate the model
     if args.evaluate:
         returns = runner.evaluate()
-        print(f'Average return is {returns}')
     else:
         # Else train the model
         runner.run()

@@ -10,12 +10,13 @@ def get_args():
     parser = argparse.ArgumentParser("Multi Agent Systems for Financial Graphs")
     
     # Environment
-    parser.add_argument("--max-episode-len", type=int, default=100, help="maximum episode length")
-    parser.add_argument("--time-steps", type=int, default=1000, help="number of time steps")
+    parser.add_argument("--max-episode-len", type=int, default=1, help="maximum episode length")
+    parser.add_argument("--time-steps", type=int, default=10000, help="number of time steps")
     parser.add_argument("--number-of-banks", type=int, default=3, help="number of banks")
     parser.add_argument("--cash-in-circulation", type=int, default=1000, help="amount of fiat currency in the system")
     parser.add_argument("--haircut-multiplier", type=int, default=0.5, help="discount applied to insolvent banks")
     parser.add_argument("--n-banks", type=int, default=3, help="number of banks")
+    parser.add_argument("--reward-type", type=str, default="Individual", help="train agents on individual or system rewards")
 
 
     # Training parameters
@@ -29,14 +30,15 @@ def get_args():
     parser.add_argument("--batch-size", type=int, default=256, help="number of episodes to optimize at the same time")
     
     # Saving and checkpoints
-    parser.add_argument("--save-dir", type=str, default="./multi_agent/model", help="directory in which training state and model should be saved")
-    parser.add_argument("--save-rate", type=int, default=200, help="save model once every time this many episodes are completed")
+    parser.add_argument("--save-dir", type=str, default="model", help="directory in which training state and model should be saved")
+    parser.add_argument("--save-rate", type=int, default=1000, help="save model once every time this many episodes are completed")
 
     # Evaluate
-    parser.add_argument("--evaluate-episodes", type=int, default=10, help="number of episodes for evaluating")
-    parser.add_argument("--evaluate-episode-len", type=int, default=100, help="length of episodes for evaluating")
-    parser.add_argument("--evaluate", type=bool, default=False, help="whether to evaluate the model")
+    parser.add_argument("--evaluate-episodes", type=int, default=100, help="number of episodes for evaluating")
+    parser.add_argument("--evaluate-episode-len", type=int, default=1, help="length of episodes for evaluating")
+    parser.add_argument("--evaluate", dest='evaluate', action='store_true', help="whether to evaluate the model")
     parser.add_argument("--evaluate-rate", type=int, default=100, help="how often to evaluate model")
+    parser.add_argument("--do-nothing", dest='do_nothing', action='store_true', help="establish a baseline when agent takes no action")
     args = parser.parse_args()
 
     return args

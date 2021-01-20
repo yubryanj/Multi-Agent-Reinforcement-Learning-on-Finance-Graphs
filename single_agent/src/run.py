@@ -28,7 +28,7 @@ if __name__ == "__main__":
         print(f'Beginning to train model...') if DEBUG else None
         
         # Train the model
-        agent.learn(int(1e5))
+        agent.learn(int(5e5))
 
         print(f'Training completed!') if DEBUG else None
 
@@ -51,8 +51,14 @@ if __name__ == "__main__":
     net_positions = []
 
     print(f"Evaluating performance: running 100 episode and storing the results.")
+    
     for _ in range(100):
-        observations = environment.reset()
+        # Specify the environment
+        observations = environment.envs[0].reset(evaluate=True)
+
+        # Add a dimension because the dummyvec is a  wrapper
+        observations = np.expand_dims(observations,0)
+
         done = False
         net_position = None
 
