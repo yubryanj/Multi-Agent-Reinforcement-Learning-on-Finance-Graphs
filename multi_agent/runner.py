@@ -121,8 +121,6 @@ class Runner:
                 # Take the next action
                 s_next, rewards, done, info = self.env.step(actions)
 
-                print(info['cash_position'])
-
                 # Update the state
                 s = s_next
 
