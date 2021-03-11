@@ -237,7 +237,7 @@ class Financial_Graph():
         self.cash_position[defaulting_banks] = 0
 
 
-    def take_action(self, action, reward_mode="Individual"):
+    def take_action(self, action, reward_mode="Individual", disable_default_actions= True):
         """
         Distributes cash as per the action requested by the agents
         :param  action  np.matrix where each cell is the percentage of the cash position to allocate
@@ -257,6 +257,12 @@ class Financial_Graph():
 
         # Normalize the cash distribution to 100%
         action = self._normalize_cash_distribution(action)
+
+        # Get the set of bankrupt banks
+        # Disable the action of defaulted banks
+        if disable_default_actions:
+            defaulted_banks = self.get_list_of_defaulting_and_solvent_banks()[0]
+            action[defaulted_banks] = 0
 
         n_rows, n_cols = action.shape
 

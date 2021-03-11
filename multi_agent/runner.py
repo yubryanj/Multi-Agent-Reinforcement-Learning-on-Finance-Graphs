@@ -78,7 +78,7 @@ class Runner:
             # Evaluate the learning
             if time_step >0 and time_step % self.args.evaluate_rate == 0:
                 print(f'Timestep {time_step}: Conducting an evaluation:')
-                average_net_position = self.evaluate()
+                average_net_position = self.evaluate(self.args)
                 returns.append(average_net_position)
 
             # Generate Noise
@@ -89,8 +89,9 @@ class Runner:
             np.save(f'{self.save_path}/returns.pkl', returns)
 
 
-    def evaluate(self):
+    def evaluate(self, args=None):
         # Allocate lists to store results from info
+        initial_net_positions = []
         net_positions = []
         system_configurations = []
 
@@ -101,6 +102,7 @@ class Runner:
             s, info = self.env.reset(evaluate=True)
 
             system_configurations.append({'initial_configurations':copy.deepcopy(info)})
+            initial_net_positions.append(info['net_position'])
 
             # Obtain the results for a series of trainings
             for time_step in range(self.args.evaluate_episode_len):
@@ -132,9 +134,13 @@ class Runner:
 
             system_configurations[-1]['final_configurations'] = copy.deepcopy(info)
 
-        print(f"Average systems net position over {self.args.evaluate_episodes} episodes is {np.mean(net_positions)}")
+        print(f'Average starting net position: {np.mean(initial_net_positions)}')
+        print(f'Average ending net position: {np.mean(net_positions)}')
 
-        np.save("./data/evaluation-data",system_configurations)
+        save_path = f"./data/{args.reward_type}/disable-default-actions-{args.disable_default_actions}"
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
+
+        np.save(f"{save_path}/evaluation-data", system_configurations)
 
         return np.mean(net_positions)
-

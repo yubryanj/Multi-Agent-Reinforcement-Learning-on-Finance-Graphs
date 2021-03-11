@@ -136,14 +136,19 @@ if __name__ == "__main__":
                                       terminal_timestep   = 1)
 
   observations = environment.reset()
-  for _ in range(1):
-    action = np.array([ [0.5,   0.0,  0.5],
-                        [0.0,   1.0,  0.0],
-                        [0.0,   0.0,  1.0]]
-                        )
+  for _ in range(100):
+    # action = np.array([ [0.5,   0.0,  0.5],
+    #                     [0.0,   1.0,  0.0],
+    #                     [0.0,   0.0,  1.0]]
+    #                     )
+  
+    action = np.zeros((3,3))
     observations, rewards, done, info = environment.step(action)
+
+    value = environment.compute_system_value()
+    print(value)
     
-    print(f'Episode finished? {done}\nAgent rewards {rewards}')
+    # print(f'Episode finished? {done}\nAgent rewards {rewards}')
 
     if done:
       observations = environment.reset()

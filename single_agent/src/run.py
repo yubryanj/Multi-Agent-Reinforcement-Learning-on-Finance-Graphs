@@ -12,12 +12,14 @@ DEBUG = False
 
 if __name__ == "__main__":
 
+    number_of_banks = 0
+
     # Directory to the model results
-    model_dir = f"./models/"
-    weights_dir = f"./models/weights.zip"
+    model_dir = f"../models/"
+    weights_dir = f"../models/weights_{number_of_banks}_agents.zip"
     
     # PPO requires the environment to be wrapped in a DummyVecEnv
-    environment = DummyVecEnv([lambda: Financial_Network_Env()])
+    environment = DummyVecEnv([lambda: Financial_Network_Env(number_of_banks=number_of_banks)])
 
     # Define the agent model
     agent = PPO2(MlpPolicy, environment, verbose=0)
@@ -37,7 +39,7 @@ if __name__ == "__main__":
             os.makedirs(model_dir)
     
         # save the model
-        agent.save('models/weights.zip')
+        agent.save(weights_dir)
     
     else:
         print(f"Loading the weights!") if DEBUG else None

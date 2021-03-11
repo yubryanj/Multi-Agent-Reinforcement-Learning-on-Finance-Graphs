@@ -369,8 +369,14 @@ class Financial_Graph():
         
         return system_net_position
 
-if __name__ == "__main__":
-    fg = Financial_Graph()
-    fg.clear()
 
-    print("Done")
+if __name__ == "__main__":
+    fg = Financial_Graph(                    
+                    number_of_banks         = 3,\
+                    cash_in_circulation     = 1000,\
+                    haircut_multiplier      = 0.5,\
+                    system_value_mode       = 'system_net_position')
+    fg.reset()
+    value = fg.compute_system_value()
+
+    print(f"value: {value}")
